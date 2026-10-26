@@ -7627,15 +7627,16 @@ const LEG_VS = `varying vec3 vN; varying vec3 vV; void main(){ vec4 mv = modelVi
 const LEG_FS = `uniform vec3 uC; uniform float uA; varying vec3 vN; varying vec3 vV; void main(){ float f = 1. - abs(dot(vN, vV)); gl_FragColor = vec4(uC, (pow(f, 2.2) * .95 + .1) * uA); }`;
 function buildSpider(){
   const g = new THREE.Group(); world.add(g); spider.g = g; g.scale.setScalar(S);
-  // 暗底实心球：让粒子像长在一个实体上，也挡住身后的星云（原蜘蛛同款）
+  // 暗底实心球：让粒子像长在一个实体上，也挡住身后的星云（原蜘蛛同款：球径 = 粒子壳 0.8×，粒子在球外一圈才透亮）
   const dark = new THREE.MeshBasicMaterial({color: 0x050a1a});
-  const shell = new THREE.Mesh(new THREE.SphereGeometry(1.25, 24, 18), dark); shell.position.copy(HEAD); g.add(shell);
-  // 粒子身体：加色发光点、随 uTime 明灭（原蜘蛛身体同款配方，穹顶形分布）
-  const nB = 1000, sp = pointsObj(nB); let i = 0;
+  const shell = new THREE.Mesh(new THREE.SphereGeometry(1.0, 24, 18), dark); shell.position.copy(HEAD); g.add(shell);
+  // 粒子身体：加色发光点、随 uTime 明灭（原蜘蛛同款配方：壳在暗球外、密铺 3000 点，15% 高亮点拉亮）
+  const nB = 3000, sp = pointsObj(nB); let i = 0;
   for (let n = 0; n < nB; n++, i++) {
-    const v = new THREE.Vector3(gauss(), gauss() * .92, gauss()).normalize().multiplyScalar(1.25 * (n < nB * .82 ? .9 + rng() * .1 : rng() * .9));
-    const cc = (rng() < .15 ? PEACH : rng() < .5 ? ICE : WHITE).map(q => q * (.5 + rng() * .5));
-    setPt(sp, i, HEAD.x + v.x, HEAD.y + v.y, HEAD.z + v.z, cc, (.04 + Math.pow(rng(), 6) * .12) * S, 14);
+    const v = new THREE.Vector3(gauss(), gauss() * .92, gauss()).normalize();
+    const R = 1.25 * (n < nB * .78 ? .95 + rng() * .17 : rng() * .95);
+    const cc = (rng() < .1 ? PEACH : rng() < .45 ? ICE : WHITE).map(q => q * (.55 + rng() * .45));
+    setPt(sp, i, HEAD.x + v.x * R, HEAD.y + v.y * R, HEAD.z + v.z * R, cc, (.045 + Math.pow(rng(), 6) * .14) * S, rng() < .15 ? 15 : 14);
   }
   sp.renderOrder = 4; g.add(sp);
   // 两只大圆眼：白色亮环 + 深色眼底 + 亮瞳（原蜘蛛同款纹理），眨眼沿用
