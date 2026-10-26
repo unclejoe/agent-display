@@ -7633,6 +7633,7 @@ const INV2 = INV_PTS.map(([x, y]) => [x, y - INV_CY]);
 const invIn = (x, y) => { let in2 = false; for (let i = 0, j = INV2.length - 1; i < INV2.length; j = i++) { const [xi, yi] = INV2[i], [xj, yj] = INV2[j]; if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) in2 = !in2; } return in2; };
 const EYE_C = 1.86, EYE_Y = .39, EYE_RX = .98, EYE_RY = 1.32;
 const invEye = (x, y) => { const ax = Math.abs(x) - EYE_C, ey = y - EYE_Y; return ax * ax / (EYE_RX * EYE_RX) + ey * ey / (EYE_RY * EYE_RY) < 1; };
+const pcGold = hex3('#ffb342'), pcDeep = hex3('#ff8c2e');
 function buildSpider(){
   const g = new THREE.Group(); world.add(g); spider.g = g; g.scale.setScalar(S);
   // 粒子身体：INVADER 发光体 —— 正面发光面密集、轮廓光边、背面补光、体积漫点；无暗板黑块，空眼透出星云 + 眼周光环
@@ -7642,13 +7643,13 @@ function buildSpider(){
     for (let k = 0; k < 80 && !ok; k++) { const x = (rng() * 2 - 1) * 3.5, y = (rng() * 2 - 1) * 3.0; if (invIn(x, y) && !invEye(x, y)) { A[0] = x; A[1] = y; ok = true; } }
     if (!ok) { n--; i--; continue; }
     const m = rng();
-    let x, y, z;
+    let x, y, z, deep = false;
     if (m < .55) { x = A[0]; y = A[1]; z = HEAD.z + .5 + rng() * .2; }            // 正面发光面
     else if (m < .78) { x = A[0]; y = A[1]; z = HEAD.z + (rng() * 2 - 1) * .7; }  // 体积漫点
-    else if (m < .96) { const sc = 1.06 + rng() * .16; x = A[0] * sc; y = A[1] * sc; z = HEAD.z + (rng() * 2 - 1) * .5; } // 轮廓光边
+    else if (m < .96) { const sc = 1.06 + rng() * .16; x = A[0] * sc; y = A[1] * sc; z = HEAD.z + (rng() * 2 - 1) * .5; deep = true; } // 轮廓光边（深金高亮）
     else { x = A[0]; y = A[1]; z = HEAD.z - .6 - rng() * .12; }                   // 背面补光
-    const cc = (rng() < .1 ? PEACH : rng() < .45 ? ICE : WHITE).map(q => q * (.55 + rng() * .45));
-    setPt(sp, i, HEAD.x + x, HEAD.y + y, z, cc, (.04 + Math.pow(rng(), 6) * .17) * S, rng() < .15 ? 15 : 14);
+    const cc = (deep ? pcDeep : rng() < .7 ? pcGold : rng() < .85 ? WHITE : ICE).map(q => q * (deep ? .75 + rng() * .25 : .5 + rng() * .35));
+    setPt(sp, i, HEAD.x + x, HEAD.y + y, z, cc, ((deep ? .06 : .035) + Math.pow(rng(), 6) * .16) * S, deep || rng() < .12 ? 15 : 14);
   }
   // 眼周光环：两只空眼外圈一道 ICE 光圈（INVADER 标志眼）
   for (let n = 0; n < nRing; n++, i++) {
@@ -7658,14 +7659,26 @@ function buildSpider(){
     setPt(sp, i, HEAD.x + x, HEAD.y + y, HEAD.z + .35, [.72, .88, 1], (.05 + rng() * .03) * S, 15);
   }
   sp.renderOrder = 4; g.add(sp);
+  // 胸口能源核心：白金光球 + 脉冲（科幻能量源，也把注意力吸到身上）
+  spider.core = new THREE.Sprite(new THREE.SpriteMaterial({map: GLOW, color: 0xffe6b0, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false}));
+  spider.core.position.set(0, -1.05, .5); spider.core.scale.setScalar(.55); spider.core.renderOrder = 5; g.add(spider.core);
+  // 力场环：身后一圈断续金/青能量环并缓慢旋转，把角色从背景里框出来（提高区分度）
+  spider.ringG = new THREE.Group(); g.add(spider.ringG);
+  spider.ring = [];
+  for (let k = 0; k < 24; k++) {
+    const a = TAU * k / 24;
+    const s = new THREE.Sprite(new THREE.SpriteMaterial({map: GLOW, color: k % 2 ? 0xffd27a : 0x62e3ff, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false}));
+    s.position.set(Math.cos(a) * 3.5, Math.sin(a) * 3.3 - .2, -.35);
+    s.scale.setScalar(.2); s.material.opacity = k % 2 ? .4 : .85; s.renderOrder = 3; spider.ringG.add(s); spider.ring.push(s);
+  }
   // 发光材质（原蜘蛛腿同款：加色菲涅尔描边）
-  const legMat = new THREE.ShaderMaterial({uniforms: {uC: {value: new THREE.Color('#b8dcff')}, uA: {value: .95}}, vertexShader: LEG_VS, fragmentShader: LEG_FS, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending});
+  const legMat = new THREE.ShaderMaterial({uniforms: {uC: {value: new THREE.Color('#ffd27a')}, uA: {value: .95}}, vertexShader: LEG_VS, fragmentShader: LEG_FS, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending});
   const segGeo = new THREE.CylinderGeometry(.72, 1, 1, 12, 1, true);
   // 触角：INVADER 顶部尖角发光杆 + 光球（读词丝线从这里接出去）
   spider.ant = [];
   [-1, 1].forEach(s => {
     const m = new THREE.Mesh(new THREE.CylinderGeometry(.14, .24, 1, 8, 1, true), legMat); m.frustumCulled = false; m.renderOrder = 4; g.add(m);
-    const tip = new THREE.Sprite(new THREE.SpriteMaterial({map: GLOW, color: 0xcfe6ff, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false})); tip.scale.setScalar(.24); tip.renderOrder = 5; g.add(tip);
+    const tip = new THREE.Sprite(new THREE.SpriteMaterial({map: GLOW, color: 0xffd27a, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false})); tip.scale.setScalar(.24); tip.renderOrder = 5; g.add(tip);
     spider.ant.push({m, tip, side: s});
   });
   // 手脚：2 臂 2 腿，发光圆柱两段关节 + GLOW 关节光点 + 火花（原蜘蛛腿同款）
@@ -7684,7 +7697,7 @@ function buildSpider(){
     for (let q = 0; q < 16; q++) L.spk.push({seg: q % 2, t: rng(), a: rng() * TAU, r: rng() * .5});
     spider.limbs.push(L);
   });
-  spider.limbs.forEach((L, li) => L.spk.forEach((k, q) => { const cc = (rng() < .3 ? PEACH : rng() < .6 ? ICE : WHITE).map(v => v * (.6 + rng() * .4)); setPt(spider.spark, li * 16 + q, 0, 0, 0, cc, (.03 + Math.pow(rng(), 5) * .06) * S, 14); }));
+  spider.limbs.forEach((L, li) => L.spk.forEach((k, q) => { const cc = (rng() < .6 ? GOLD3 : WHITE).map(v => v * (.65 + rng() * .35)); setPt(spider.spark, li * 16 + q, 0, 0, 0, cc, (.03 + Math.pow(rng(), 5) * .06) * S, 14); }));
   spider.spark.renderOrder = 4; g.add(spider.spark);
   // 脚下的暗影：星云再亮，👾 也压在一块暗底上
   const shT = canvasTex(128, 128, (x, w) => { const g = x.createRadialGradient(64, 64, 0, 64, 64, 64); g.addColorStop(0, 'rgba(2,4,12,.95)'); g.addColorStop(.45, 'rgba(2,4,12,.7)'); g.addColorStop(1, 'rgba(2,4,12,0)'); x.fillStyle = g; x.fillRect(0, 0, w, w); });
@@ -7693,7 +7706,7 @@ function buildSpider(){
 const UPV = window.THREE ? new THREE.Vector3(0, 1, 0) : null;
 const V0 = window.THREE ? new THREE.Vector3() : null, V1 = window.THREE ? new THREE.Vector3() : null;
 function setSeg(m, a, b, r){ const d = tA[3].subVectors(b, a), len = d.length(); m.position.addVectors(a, b).multiplyScalar(.5); m.quaternion.setFromUnitVectors(UPV, d.divideScalar(len || 1)); m.scale.set(r, len, r); }
-function limbsStep(){
+function limbsStep(dt){
   const t = animT, walking = spider.walking, air = !!(spider.air && spider.jump), reading = crawl.phase === 'read';
   const pa = spider.spark.geometry.attributes.position;
   spider.limbs.forEach((L, li) => {
@@ -7732,6 +7745,10 @@ function limbsStep(){
     setSeg(a.m, V0, V1, .2);
     a.tip.position.copy(V1); a.tip.material.opacity = .65 + .35 * Math.sin(t * 4 + ai);
   });
+  // 胸口能源核心脉动 + 力场环旋转
+  spider.core.material.opacity = .55 + .35 * Math.sin(t * 3.1);
+  spider.core.scale.setScalar(.5 + .09 * Math.sin(t * 3.1 + 1));
+  spider.ringG.rotation.z += dt * .28;
 }
 const tA = window.THREE ? [new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()] : [];
 
@@ -8033,14 +8050,14 @@ function updateScene(dt){
   U.b.value[13] = 1; U.b.value[14] = .62; U.b.value[15] = 1.3;
   hazes.forEach(h => { h.material.opacity = h.userData.o * Math.min(1.7, U.b.value[h.userData.k] / .6) * (h.userData.k === spider.a && !spider.air ? .7 : 1); });
   if (!U.sp.value) U.sp.value = new THREE.Vector4();
-  U.sp.value.set(spider.x, spider.y, spider.z, spider.air ? .001 : 2.1 * SS);
+  U.sp.value.set(spider.x, spider.y, spider.z, spider.air ? .001 : 1.0 * SS);
   coreBall.children.forEach(m => m.rotateOnAxis(m.userData.ax, m.userData.sp * dt));
   coreBall.rotation.y += dt * .08;
   coreBall.children.forEach(m => { m.material.uniforms.uA.value = Math.min(1.4, (m.userData.a0 || (m.userData.a0 = m.material.uniforms.uA.value)) * (1 + flash[0] * .5)); });
   ringsG.children.forEach(h => { const u = h.userData; const a = animT * u.sp; u.dot.position.set(Math.cos(a) * u.r, 0, Math.sin(a) * u.r); });
   ringsG.rotation.y += dt * .03;
   // 星云蛛本体：粒子外星人悬浮于云面上，发光手脚随状态摆动（走路迈步摆臂 / 读词伸手 / 跳跃收腿举臂）
-  const g = spider.g; g.position.set(spider.x, spider.y + 2.0 + Math.abs(Math.sin(spider.bob)) * (spider.walking ? .07 : .03), spider.z);
+  const g = spider.g; g.position.set(spider.x, spider.y + 2.6 + Math.abs(Math.sin(spider.bob)) * (spider.walking ? .07 : .03), spider.z);
   SS += ((spider.a === 0 && !spider.air ? 1.5 : 1) * S - SS) * Math.min(1, dt * 4);
   const sq = spider.land; g.scale.set(SS * (1 + .14 * sq), SS * (1 - .24 * sq), SS * (1 + .14 * sq));
   spider.shadow.scale.setScalar(7.5 * SS); spider.shadow.position.set(spider.x, spider.y + .1, spider.z); spider.shadow.material.opacity = spider.air ? .25 : .8;
