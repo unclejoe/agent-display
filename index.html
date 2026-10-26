@@ -7625,14 +7625,11 @@ function buildStreaks(){
 const HEAD = new (window.THREE ? THREE.Vector3 : Object)(0, 1.0, .55);
 const LEG_VS = `varying vec3 vN; varying vec3 vV; void main(){ vec4 mv = modelViewMatrix * vec4(position, 1.); vN = normalize(normalMatrix * normal); vV = normalize(-mv.xyz); gl_Position = projectionMatrix * mv; }`;
 const LEG_FS = `uniform vec3 uC; uniform float uA; varying vec3 vN; varying vec3 vV; void main(){ float f = 1. - abs(dot(vN, vV)); gl_FragColor = vec4(uC, (pow(f, 2.2) * .95 + .1) * uA); }`;
-// INVADER 剪影（对称多边形、带倒角；局部坐标 ×1.5 放大；y 采样时居中）。空眼区 + 眼周光环
-const INV_HALF = [[-2.85, 4.2], [-2.18, 1.58], [-3.3, 1.2], [-3.3, .08], [-2.25, -.23], [-3.08, -1.35], [-3.08, -2.25], [-2.03, -2.25], [-2.03, -2.78], [-1.28, -2.78], [-1.28, -2.25], [0, -2.25]];
-const INV_PTS = INV_HALF.concat(INV_HALF.slice(0, -1).reverse().map(([x, y]) => [-x, y]));
-const INV_CY = INV_PTS.reduce((s, [, y]) => s + y, 0) / INV_PTS.length;
-const INV2 = INV_PTS.map(([x, y]) => [x, y - INV_CY]);
-const invIn = (x, y) => { let in2 = false; for (let i = 0, j = INV2.length - 1; i < INV2.length; j = i++) { const [xi, yi] = INV2[i], [xj, yj] = INV2[j]; if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) in2 = !in2; } return in2; };
-const EYE_C = 1.86, EYE_Y = .39, EYE_RX = .98, EYE_RY = 1.32;
-const invEye = (x, y) => { const ax = Math.abs(x) - EYE_C, ey = y - EYE_Y; return ax * ax / (EYE_RX * EYE_RX) + ey * ey / (EYE_RY * EYE_RY) < 1; };
+// 经典 ALIEN INVADER 11×8 像素位图（标准造型：双触角尖、头带、两个空眼、宽胸、6 只小脚），粒子按像素格采样 = 形状 100% 忠于原版
+const INV_BITS = ['..X.....X..', '...X...X...', '..XXXXXXX..', '.XX.XXX.XX.', 'XX.XXXXX.XX', 'XXXXXXXXXXX', 'X.XX.X.XX.X', 'X.X.X.X.X.X'];
+const INV_CW = .58, INV_CH = .76;                                  // 每格尺寸 → 总宽 6.38、高 6.08 局部（世界约 2.8×2.7）
+const invIn = (x, y) => { const c = Math.floor(x / INV_CW + 5.5), r = Math.floor(4 - y / INV_CH); const b = INV_BITS[r]; return !!b && c >= 0 && c < 11 && b[c] === 'X'; };
+const EYE_C = 1.45, EYE_Y = 0, EYE_RX = .78, EYE_RY = .92;         // 左/右眼（像素 col 2-3、col 7-8 空格），供眼周光环定位
 const pcGold = hex3('#ffb342'), pcDeep = hex3('#ff8c2e');
 function buildSpider(){
   const g = new THREE.Group(); world.add(g); spider.g = g; g.scale.setScalar(S);
@@ -7640,7 +7637,7 @@ function buildSpider(){
   const nBody = 5500, nRing = 120, sp = pointsObj(nBody + nRing); let i = 0; const A = [0, 0];
   for (let n = 0; n < nBody; n++, i++) {
     let ok = false;
-    for (let k = 0; k < 80 && !ok; k++) { const x = (rng() * 2 - 1) * 3.5, y = (rng() * 2 - 1) * 3.0; if (invIn(x, y) && !invEye(x, y)) { A[0] = x; A[1] = y; ok = true; } }
+    for (let k = 0; k < 80 && !ok; k++) { const x = (rng() * 2 - 1) * 3.3, y = (rng() * 2 - 1) * 3.1; if (invIn(x, y)) { A[0] = x; A[1] = y; ok = true; } }
     if (!ok) { n--; i--; continue; }
     const m = rng();
     let x, y, z, deep = false;
@@ -7668,7 +7665,7 @@ function buildSpider(){
   for (let k = 0; k < 24; k++) {
     const a = TAU * k / 24;
     const s = new THREE.Sprite(new THREE.SpriteMaterial({map: GLOW, color: k % 2 ? 0xffd27a : 0x62e3ff, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false}));
-    s.position.set(Math.cos(a) * 3.5, Math.sin(a) * 3.3 - .2, -.35);
+    s.position.set(Math.cos(a) * 3.6, Math.sin(a) * 3.4, -.35);
     s.scale.setScalar(.2); s.material.opacity = k % 2 ? .4 : .85; s.renderOrder = 3; spider.ringG.add(s); spider.ring.push(s);
   }
   // 发光材质（原蜘蛛腿同款：加色菲涅尔描边）
@@ -7685,10 +7682,10 @@ function buildSpider(){
   spider.limbs = [];
   spider.spark = pointsObj(4 * 2 * 16);
   const defs = [
-    {type: 'leg', side: -1, rootL: [-1.66, -2.93, .08], l1: 1.0, l2: .95,  w1: .15, w2: .12},
-    {type: 'leg', side: 1,  rootL: [ 1.66, -2.93, .08], l1: 1.0, l2: .95,  w1: .15, w2: .12},
-    {type: 'arm', side: -1, rootL: [-3.8, .45, .3],     l1: 1.1, l2: .9,   w1: .12, w2: .1},
-    {type: 'arm', side: 1,  rootL: [ 3.8, .45, .3],     l1: 1.1, l2: .9,   w1: .12, w2: .1}
+    {type: 'leg', side: -1, rootL: [-.58, -2.9, .1],  l1: 1.0, l2: .9,  w1: .15, w2: .12},
+    {type: 'leg', side: 1,  rootL: [ .58, -2.9, .1],  l1: 1.0, l2: .9,  w1: .15, w2: .12},
+    {type: 'arm', side: -1, rootL: [-2.95, .35, .35], l1: 1.15, l2: .95, w1: .12, w2: .1},
+    {type: 'arm', side: 1,  rootL: [ 2.95, .35, .35], l1: 1.15, l2: .95, w1: .12, w2: .1}
   ];
   defs.forEach((D, li) => {
     const L = {type: D.type, side: D.side, rootL: new THREE.Vector3(...D.rootL), l1: D.l1, l2: D.l2, w1: D.w1, w2: D.w2, segs: [], joints: [], spk: []};
@@ -7741,7 +7738,7 @@ function limbsStep(dt){
   spider.spark.geometry.attributes.position.needsUpdate = true;
   // 触角：INVADER 顶部尖角发光杆 + 光球脉动
   spider.ant.forEach((a, ai) => {
-    V0.set(a.side * 2.4, 1.95, 1.5); V1.set(a.side * 3.3, 5.7, 1.65);
+    V0.set(a.side * 1.16, 2.3, .9); V1.set(a.side * 1.65, 4.0, 1.0);
     setSeg(a.m, V0, V1, .2);
     a.tip.position.copy(V1); a.tip.material.opacity = .65 + .35 * Math.sin(t * 4 + ai);
   });
@@ -7768,7 +7765,7 @@ function buildThreads(){
 }
 const PINK = hex3('#ff6fae'), GOLD3 = hex3('#ffd27a'), GOODC = hex3('#6ff0c0'), CYANC = hex3('#62e3ff');
 function threadsStep(dt){
-  const g = spider.g, H = tA[0].set(0, 5.7, HEAD.z + .55).applyMatrix4(g.matrixWorld);
+  const g = spider.g, H = tA[0].set(0, 4.0, HEAD.z + .5).applyMatrix4(g.matrixWorld);
   const pa = threadObj.geometry.attributes.position, ca = threadObj.geometry.attributes.aCol; let nOn = 0;
   threads.forEach((t, ti) => {
     if (t.on) { t.g = t.ret ? t.g - dt * 2.6 : Math.min(1, t.g + dt * 3.2); if (t.g <= 0) t.on = false; }
