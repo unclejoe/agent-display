@@ -7621,57 +7621,61 @@ function buildStreaks(){
   streakG = new THREE.Group(); streakG.position.z = -100; streakG.add(m); camera.add(streakG);
 }
 
-/* ---------- 星云蛛（图二）：ALIEN INVADER 造型 · 原蜘蛛同款粒子发光质感（暗底剪影板 + 发光粒子面 + 关节手脚） ---------- */
+/* ---------- 星云蛛（图二）：ALIEN INVADER 造型 · 全粒子透明发光（无暗底黑块；剪影由光勾勒，空眼透出星云，眼周光环） ---------- */
 const HEAD = new (window.THREE ? THREE.Vector3 : Object)(0, 1.0, .55);
 const LEG_VS = `varying vec3 vN; varying vec3 vV; void main(){ vec4 mv = modelViewMatrix * vec4(position, 1.); vN = normalize(normalMatrix * normal); vV = normalize(-mv.xyz); gl_Position = projectionMatrix * mv; }`;
 const LEG_FS = `uniform vec3 uC; uniform float uA; varying vec3 vN; varying vec3 vV; void main(){ float f = 1. - abs(dot(vN, vV)); gl_FragColor = vec4(uC, (pow(f, 2.2) * .95 + .1) * uA); }`;
-// INVADER 剪影（对称多边形，经典外形：顶角尖刺 + 头带 + 空眼区 + 宽胸 + 底沿；y 局部坐标，采样时按中心对齐 HEAD）
-const INV_HALF = [[-.42, 1.5], [-.3, .7], [-1.22, .42], [-1.22, .05], [-.62, -.28], [-1.18, -.78], [-1.18, -1.05], [-.62, -1.05], [0, -1.05]];
+// INVADER 剪影（对称多边形、带倒角；局部坐标 ×1.5 放大；y 采样时居中）。空眼区 + 眼周光环
+const INV_HALF = [[-2.85, 4.2], [-2.18, 1.58], [-3.3, 1.2], [-3.3, .08], [-2.25, -.23], [-3.08, -1.35], [-3.08, -2.25], [-2.03, -2.25], [-2.03, -2.78], [-1.28, -2.78], [-1.28, -2.25], [0, -2.25]];
 const INV_PTS = INV_HALF.concat(INV_HALF.slice(0, -1).reverse().map(([x, y]) => [-x, y]));
 const INV_CY = INV_PTS.reduce((s, [, y]) => s + y, 0) / INV_PTS.length;
-const INV2 = INV_PTS.map(([x, y]) => [x, y - INV_CY]);       // y 居中
+const INV2 = INV_PTS.map(([x, y]) => [x, y - INV_CY]);
 const invIn = (x, y) => { let in2 = false; for (let i = 0, j = INV2.length - 1; i < INV2.length; j = i++) { const [xi, yi] = INV2[i], [xj, yj] = INV2[j]; if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) in2 = !in2; } return in2; };
-const invEye = (x, y) => { const ax = Math.abs(x) - .4, ey = y + .12; return ax * ax / (.26 * .26) + ey * ey / (.4 * .4) < 1; };
+const EYE_C = 1.86, EYE_Y = .39, EYE_RX = .98, EYE_RY = 1.32;
+const invEye = (x, y) => { const ax = Math.abs(x) - EYE_C, ey = y - EYE_Y; return ax * ax / (EYE_RX * EYE_RX) + ey * ey / (EYE_RY * EYE_RY) < 1; };
 function buildSpider(){
   const g = new THREE.Group(); world.add(g); spider.g = g; g.scale.setScalar(S);
-  // 暗底剪影板（INVADER 外形挤出，挡住身后星云；粒子在它表面外透亮，原蜘蛛同款）
-  const dark = new THREE.MeshBasicMaterial({color: 0x050a1a});
-  const shape = new THREE.Shape();
-  INV2.forEach(([x, y], k) => k ? shape.lineTo(x, y) : shape.moveTo(x, y));
-  shape.closePath();
-  const slab = new THREE.Mesh(new THREE.ExtrudeGeometry(shape, {depth: .8, bevelEnabled: false}), dark);
-  slab.position.set(0, HEAD.y, HEAD.z - .4); g.add(slab);
-  // 粒子身体：正面发光面 + 轮廓光边 + 背面补光；眼睛区域不留粒子（INVADER 空眼）
-  const nB = 3400, sp = pointsObj(nB); let i = 0; const A = [0, 0];
-  for (let n = 0; n < nB; n++, i++) {
+  // 粒子身体：INVADER 发光体 —— 正面发光面密集、轮廓光边、背面补光、体积漫点；无暗板黑块，空眼透出星云 + 眼周光环
+  const nBody = 5500, nRing = 120, sp = pointsObj(nBody + nRing); let i = 0; const A = [0, 0];
+  for (let n = 0; n < nBody; n++, i++) {
     let ok = false;
-    for (let k = 0; k < 80 && !ok; k++) { const x = (rng() * 2 - 1) * 1.26, y = (rng() * 2 - 1) * 1.32; if (invIn(x, y) && !invEye(x, y)) { A[0] = x; A[1] = y; ok = true; } }
+    for (let k = 0; k < 80 && !ok; k++) { const x = (rng() * 2 - 1) * 3.5, y = (rng() * 2 - 1) * 3.0; if (invIn(x, y) && !invEye(x, y)) { A[0] = x; A[1] = y; ok = true; } }
     if (!ok) { n--; i--; continue; }
-    const m = rng(), sc = m > .3 ? 1.05 + rng() * .14 : 1;
-    const x = A[0] * sc, y = A[1] * sc;
-    const z = m < .15 ? HEAD.z - .4 - rng() * .1 : HEAD.z + .4 + rng() * .16;
+    const m = rng();
+    let x, y, z;
+    if (m < .55) { x = A[0]; y = A[1]; z = HEAD.z + .5 + rng() * .2; }            // 正面发光面
+    else if (m < .78) { x = A[0]; y = A[1]; z = HEAD.z + (rng() * 2 - 1) * .7; }  // 体积漫点
+    else if (m < .96) { const sc = 1.06 + rng() * .16; x = A[0] * sc; y = A[1] * sc; z = HEAD.z + (rng() * 2 - 1) * .5; } // 轮廓光边
+    else { x = A[0]; y = A[1]; z = HEAD.z - .6 - rng() * .12; }                   // 背面补光
     const cc = (rng() < .1 ? PEACH : rng() < .45 ? ICE : WHITE).map(q => q * (.55 + rng() * .45));
-    setPt(sp, i, HEAD.x + x, HEAD.y + y, z, cc, (.045 + Math.pow(rng(), 6) * .14) * S, rng() < .15 ? 15 : 14);
+    setPt(sp, i, HEAD.x + x, HEAD.y + y, z, cc, (.04 + Math.pow(rng(), 6) * .17) * S, rng() < .15 ? 15 : 14);
+  }
+  // 眼周光环：两只空眼外圈一道 ICE 光圈（INVADER 标志眼）
+  for (let n = 0; n < nRing; n++, i++) {
+    const s = n < nRing / 2 ? -1 : 1, q = n < nRing / 2 ? n : n - nRing / 2;
+    const a = TAU * q / (nRing / 2);
+    const x = s * EYE_C + Math.cos(a) * EYE_RX * 1.04, y = EYE_Y + Math.sin(a) * EYE_RY * 1.04;
+    setPt(sp, i, HEAD.x + x, HEAD.y + y, HEAD.z + .35, [.72, .88, 1], (.05 + rng() * .03) * S, 15);
   }
   sp.renderOrder = 4; g.add(sp);
   // 发光材质（原蜘蛛腿同款：加色菲涅尔描边）
   const legMat = new THREE.ShaderMaterial({uniforms: {uC: {value: new THREE.Color('#b8dcff')}, uA: {value: .95}}, vertexShader: LEG_VS, fragmentShader: LEG_FS, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending});
   const segGeo = new THREE.CylinderGeometry(.72, 1, 1, 12, 1, true);
-  // 触角：INVADER 顶部两根尖角 + 光球（读词丝线从这里接出去）
+  // 触角：INVADER 顶部尖角发光杆 + 光球（读词丝线从这里接出去）
   spider.ant = [];
   [-1, 1].forEach(s => {
     const m = new THREE.Mesh(new THREE.CylinderGeometry(.14, .24, 1, 8, 1, true), legMat); m.frustumCulled = false; m.renderOrder = 4; g.add(m);
-    const tip = new THREE.Sprite(new THREE.SpriteMaterial({map: GLOW, color: 0xcfe6ff, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false})); tip.scale.setScalar(.22); tip.renderOrder = 5; g.add(tip);
+    const tip = new THREE.Sprite(new THREE.SpriteMaterial({map: GLOW, color: 0xcfe6ff, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false})); tip.scale.setScalar(.24); tip.renderOrder = 5; g.add(tip);
     spider.ant.push({m, tip, side: s});
   });
   // 手脚：2 臂 2 腿，发光圆柱两段关节 + GLOW 关节光点 + 火花（原蜘蛛腿同款）
   spider.limbs = [];
   spider.spark = pointsObj(4 * 2 * 16);
   const defs = [
-    {type: 'leg', side: -1, rootL: [-.5, -1.0, .55], l1: .34, l2: .32, w1: .11, w2: .09},
-    {type: 'leg', side: 1,  rootL: [ .5, -1.0, .55], l1: .34, l2: .32, w1: .11, w2: .09},
-    {type: 'arm', side: -1, rootL: [-1.25, 0, .9],   l1: .42, l2: .36, w1: .09, w2: .07},
-    {type: 'arm', side: 1,  rootL: [ 1.25, 0, .9],   l1: .42, l2: .36, w1: .09, w2: .07}
+    {type: 'leg', side: -1, rootL: [-1.66, -2.93, .08], l1: 1.0, l2: .95,  w1: .15, w2: .12},
+    {type: 'leg', side: 1,  rootL: [ 1.66, -2.93, .08], l1: 1.0, l2: .95,  w1: .15, w2: .12},
+    {type: 'arm', side: -1, rootL: [-3.8, .45, .3],     l1: 1.1, l2: .9,   w1: .12, w2: .1},
+    {type: 'arm', side: 1,  rootL: [ 3.8, .45, .3],     l1: 1.1, l2: .9,   w1: .12, w2: .1}
   ];
   defs.forEach((D, li) => {
     const L = {type: D.type, side: D.side, rootL: new THREE.Vector3(...D.rootL), l1: D.l1, l2: D.l2, w1: D.w1, w2: D.w2, segs: [], joints: [], spk: []};
@@ -7684,7 +7688,7 @@ function buildSpider(){
   spider.spark.renderOrder = 4; g.add(spider.spark);
   // 脚下的暗影：星云再亮，👾 也压在一块暗底上
   const shT = canvasTex(128, 128, (x, w) => { const g = x.createRadialGradient(64, 64, 0, 64, 64, 64); g.addColorStop(0, 'rgba(2,4,12,.95)'); g.addColorStop(.45, 'rgba(2,4,12,.7)'); g.addColorStop(1, 'rgba(2,4,12,0)'); x.fillStyle = g; x.fillRect(0, 0, w, w); });
-  spider.shadow = new THREE.Sprite(new THREE.SpriteMaterial({map: shT, transparent: true, depthWrite: false, depthTest: false, opacity: .8})); spider.shadow.renderOrder = 3; spider.shadow.scale.setScalar(4.4 * S); world.add(spider.shadow);
+  spider.shadow = new THREE.Sprite(new THREE.SpriteMaterial({map: shT, transparent: true, depthWrite: false, depthTest: false, opacity: .8})); spider.shadow.renderOrder = 3; spider.shadow.scale.setScalar(7.5 * S); world.add(spider.shadow);
 }
 const UPV = window.THREE ? new THREE.Vector3(0, 1, 0) : null;
 const V0 = window.THREE ? new THREE.Vector3() : null, V1 = window.THREE ? new THREE.Vector3() : null;
@@ -7722,10 +7726,10 @@ function limbsStep(){
     });
   });
   spider.spark.geometry.attributes.position.needsUpdate = true;
-  // 触角：INVADER 顶部尖角 + 光球脉动（贴前板面）
+  // 触角：INVADER 顶部尖角发光杆 + 光球脉动
   spider.ant.forEach((a, ai) => {
-    V0.set(a.side * .42, 1.4, .95); V1.set(a.side * .62, 2.2, 1.05);
-    setSeg(a.m, V0, V1, .18);
+    V0.set(a.side * 2.4, 1.95, 1.5); V1.set(a.side * 3.3, 5.7, 1.65);
+    setSeg(a.m, V0, V1, .2);
     a.tip.position.copy(V1); a.tip.material.opacity = .65 + .35 * Math.sin(t * 4 + ai);
   });
 }
@@ -7747,7 +7751,7 @@ function buildThreads(){
 }
 const PINK = hex3('#ff6fae'), GOLD3 = hex3('#ffd27a'), GOODC = hex3('#6ff0c0'), CYANC = hex3('#62e3ff');
 function threadsStep(dt){
-  const g = spider.g, H = tA[0].set(0, 2.2, HEAD.z + .45).applyMatrix4(g.matrixWorld);
+  const g = spider.g, H = tA[0].set(0, 5.7, HEAD.z + .55).applyMatrix4(g.matrixWorld);
   const pa = threadObj.geometry.attributes.position, ca = threadObj.geometry.attributes.aCol; let nOn = 0;
   threads.forEach((t, ti) => {
     if (t.on) { t.g = t.ret ? t.g - dt * 2.6 : Math.min(1, t.g + dt * 3.2); if (t.g <= 0) t.on = false; }
@@ -8036,10 +8040,10 @@ function updateScene(dt){
   ringsG.children.forEach(h => { const u = h.userData; const a = animT * u.sp; u.dot.position.set(Math.cos(a) * u.r, 0, Math.sin(a) * u.r); });
   ringsG.rotation.y += dt * .03;
   // 星云蛛本体：粒子外星人悬浮于云面上，发光手脚随状态摆动（走路迈步摆臂 / 读词伸手 / 跳跃收腿举臂）
-  const g = spider.g; g.position.set(spider.x, spider.y + .55 + Math.abs(Math.sin(spider.bob)) * (spider.walking ? .07 : .03), spider.z);
+  const g = spider.g; g.position.set(spider.x, spider.y + 2.0 + Math.abs(Math.sin(spider.bob)) * (spider.walking ? .07 : .03), spider.z);
   SS += ((spider.a === 0 && !spider.air ? 1.5 : 1) * S - SS) * Math.min(1, dt * 4);
   const sq = spider.land; g.scale.set(SS * (1 + .14 * sq), SS * (1 - .24 * sq), SS * (1 + .14 * sq));
-  spider.shadow.scale.setScalar(4.4 * SS); spider.shadow.position.set(spider.x, spider.y + .1, spider.z); spider.shadow.material.opacity = spider.air ? .25 : .8;
+  spider.shadow.scale.setScalar(7.5 * SS); spider.shadow.position.set(spider.x, spider.y + .1, spider.z); spider.shadow.material.opacity = spider.air ? .25 : .8;
   limbsStep(dt); threadsStep(dt); cometsDraw();
 }
 
@@ -8125,7 +8129,7 @@ function placeOverlays(){
   for (let k = 0; k <= 12; k++) { const el = clEls[k]; if (el.style.display === 'none') continue; const r = el.getBoundingClientRect(); if (r.width < 2) continue; done.push({l: r.left - hr.left, r: r.right - hr.left, t: r.top - hr.top, b: r.bottom - hr.top}); }
   PRC.forEach(r => done.push({l: r[0], r: r[2], t: r[1], b: r[3]}));
   // 词标签也让开星云蛛本体，别把它盖住
-  { const [sx, sy] = project(spider.x, spider.y + .5 * SS / S, spider.z), [ex] = project(spider.x + 2.0 * SS, spider.y + .5 * SS / S, spider.z), rr = Math.max(24, Math.abs(ex - sx)); done.push({l: sx - rr, r: sx + rr, t: sy - rr * .85, b: sy + rr * .7}); }
+  { const [sx, sy] = project(spider.x, spider.y + .5 * SS / S, spider.z), [ex] = project(spider.x + 3.6 * SS, spider.y + .5 * SS / S, spider.z), rr = Math.max(24, Math.abs(ex - sx)); done.push({l: sx - rr, r: sx + rr, t: sy - rr * .85, b: sy + rr * .7}); }
   const off = 8 * sc, minY = 8;
   placed.forEach(q => {
     let ty = q.y;
