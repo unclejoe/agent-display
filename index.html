@@ -7435,8 +7435,7 @@ const THREE = window.THREE;
 const cv = $('#gl');
 let renderer = null, scene, camera, composer = null, bloom = null, world, glOK = false, pr = 1;
 const U = {time: {value: 0}, px: {value: 600}, b: {value: new Float32Array(16).fill(1)}, sp: {value: null}};
-let starsObj, threadObj, sparkObj, trailLine, coreBall, legG, ringsG, streakG, cometSprites = [], pulseSpr, GLOW;
-const legs = [];
+let starsObj, threadObj, trailLine, coreBall, ringsG, streakG, cometSprites = [], pulseSpr, GLOW;
 const v3 = window.THREE ? new THREE.Vector3() : null;
 
 const PT_VS = `attribute vec3 aCol; attribute float aSize; attribute float aPh; attribute float aCid;
@@ -7466,8 +7465,6 @@ void main(){
   gl_FragColor = vec4(col, edge * (.55 + .45 * str) * along * uA);
 }`;
 
-const LEG_VS = `varying vec3 vN; varying vec3 vV; void main(){ vec4 mv = modelViewMatrix * vec4(position, 1.); vN = normalize(normalMatrix * normal); vV = normalize(-mv.xyz); gl_Position = projectionMatrix * mv; }`;
-const LEG_FS = `uniform vec3 uC; uniform float uA; varying vec3 vN; varying vec3 vV; void main(){ float f = 1. - abs(dot(vN, vV)); gl_FragColor = vec4(uC, (pow(f, 2.2) * .95 + .1) * uA); }`;
 const ST_VS = `attribute float aA; attribute float aPh; attribute float aY; uniform float uTime; varying float vA; varying float vY;
 void main(){ vA = aA * (.45 + .55 * sin(uTime * (.35 + aPh * .5) + aPh * 40.)); vY = aY; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.); }`;
 const ST_FS = `uniform vec3 uC; varying float vA; varying float vY; void main(){ float f = 1. - abs(vY * 2. - 1.); gl_FragColor = vec4(uC, vA * f * f); }`;
@@ -7624,14 +7621,79 @@ function buildStreaks(){
   streakG = new THREE.Group(); streakG.position.z = -100; streakG.add(m); camera.add(streakG);
 }
 
-/* ---------- 星云蛛（图二）：👾 脸 + 粒子光晕 + 8 条逆解腿扒云 + 脚下暗影 ---------- */
+/* ---------- 星云蛛（图二）：手绘 👾 · 手脚关节自由活动 + 粒子光晕 + 脚下暗影 ---------- */
 const HEAD = new (window.THREE ? THREE.Vector3 : Object)(0, 1.0, .55);
+// 脸画布：每帧重绘 👾 本体与手脚姿态，作为 Sprite 纹理贴到永远面向镜头的平面上
+const FC = 256, FAC = 128;
+const fcv = document.createElement('canvas'); fcv.width = fcv.height = FC;
+const fx = fcv.getContext('2d');
+const CPUR = '#8f6bff', CPLIMB = '#7f58e6', CPINK = '#5a36b8', CPSCL = '#f2f8ff';
+function drawFace(){
+  const t = animT, walking = spider.walking, air = !!(spider.air && spider.jump), reading = crawl.phase === 'read';
+  const sp = Math.hypot(spider.vx, spider.vz);
+  const lean = air ? (spider.jump.t - .5) * .55 : walking ? .1 * clamp(sp / 3.8, 0, 1) : 0;
+  fx.clearRect(0, 0, FC, FC);
+  fx.save();
+  fx.translate(FAC, FAC); fx.rotate(lean); fx.translate(-FAC, -FAC);
+  // 触角 + 发光尖（ICE 色，接住读词丝线）
+  fx.strokeStyle = CPLIMB; fx.lineWidth = 5; fx.lineCap = 'round';
+  [[104, 70, 96, 40], [152, 70, 160, 40]].forEach(([x0, y0, x1, y1]) => {
+    fx.beginPath(); fx.moveTo(x0, y0); fx.quadraticCurveTo((x0 + x1) / 2, 34, x1, y1); fx.stroke();
+    const g = fx.createRadialGradient(x1, y1, 0, x1, y1, 9);
+    g.addColorStop(0, '#ffffff'); g.addColorStop(.5, '#9fd4ff'); g.addColorStop(1, 'rgba(159,212,255,0)');
+    fx.fillStyle = g; fx.beginPath(); fx.arc(x1, y1, 9, 0, TAU); fx.fill();
+  });
+  // 身体：圆头 + 圆角躯干，底部压一层体积暗影
+  fx.fillStyle = CPUR;
+  fx.beginPath(); fx.arc(128, 118, 54, 0, TAU); fx.fill();
+  fx.beginPath(); fx.roundRect(98, 146, 60, 56, 24); fx.fill();
+  const bg = fx.createLinearGradient(0, 148, 0, 202);
+  bg.addColorStop(0, 'rgba(90,54,184,0)'); bg.addColorStop(1, 'rgba(90,54,184,.4)');
+  fx.fillStyle = bg; fx.beginPath(); fx.roundRect(100, 148, 56, 52, 22); fx.fill();
+  // 眼睛（眨眼沿用 4.2s 周期）
+  const bl = (t % 4.2) < .12 ? .15 : 1;
+  fx.fillStyle = CPSCL;
+  [[108, 114], [148, 114]].forEach(([ex, ey]) => { fx.beginPath(); fx.ellipse(ex, ey, 13, 17 * bl, 0, 0, TAU); fx.fill(); });
+  if (bl > .5) { fx.fillStyle = '#0b1030'; [[108, 116], [148, 116]].forEach(([px, py]) => { fx.beginPath(); fx.arc(px, py, 6.5, 0, TAU); fx.fill(); }); }
+  // 嘴
+  fx.fillStyle = CPINK; fx.beginPath(); fx.roundRect(121, 150, 14, 6, 3); fx.fill();
+  // 肢节绘制助手：两段式肢体（关节）+ 手/脚
+  const seg = (x0, y0, a, len, w, col) => { fx.strokeStyle = col; fx.lineWidth = w; fx.lineCap = 'round'; fx.beginPath(); fx.moveTo(x0, y0); fx.lineTo(x0 + Math.cos(a) * len, y0 + Math.sin(a) * len); fx.stroke(); };
+  const mitt = (x, y, s) => { fx.fillStyle = CPLIMB; fx.beginPath(); fx.arc(x, y, s, 0, TAU); fx.fill(); [[-1, 0], [0, -1], [1, 0]].forEach(([dx, dy]) => { fx.beginPath(); fx.arc(x + dx * s * 1.1, y + dy * s * 1.1, s * .4, 0, TAU); fx.fill(); }); };
+  const boot = (x, y, a) => { fx.save(); fx.translate(x, y); fx.rotate(a); fx.fillStyle = CPLIMB; fx.beginPath(); fx.roundRect(-11, -4.5, 22, 9, 4.5); fx.fill(); fx.restore(); };
+  // 腿：右腿相位 t*10、左腿 +π（交替迈步）；起跳收腿、读词微蹲、待命微晃
+  const hipR = walking ? Math.sin(t * 10) * .62 : air ? .75 + Math.sin(t * 30) * .15 : reading ? .2 : .14;
+  const hipL = walking ? Math.sin(t * 10 + Math.PI) * .62 : air ? .75 - Math.sin(t * 30) * .15 : reading ? -.2 : -.14;
+  const knR = walking ? .75 + Math.max(0, -Math.cos(t * 10)) * .8 : air ? 1.15 : reading ? .45 : .32;
+  const knL = walking ? .75 + Math.max(0, -Math.cos(t * 10 + Math.PI)) * .8 : air ? 1.15 : reading ? .45 : .32;
+  [[-22, hipR, knR], [22, hipL, knL]].forEach(([hx, ha, ka]) => {
+    const x0 = FAC + hx, y0 = 186;
+    const ex = x0 + Math.cos(ha) * 26, ey = y0 + Math.sin(ha) * 26;
+    seg(x0, y0, ha, 26, 11, CPLIMB);
+    seg(ex, ey, ha + ka, 26, 10, CPLIMB);
+    boot(ex + Math.cos(ha + ka) * 26, ey + Math.sin(ha + ka) * 26, ha + ka);
+  });
+  // 臂：走路与同侧腿相反摆动；读词伸向词方向；跳跃上举；待命微摆
+  const shR = walking ? -Math.sin(t * 10) * .5 : air ? -2.3 : reading ? -1.05 + Math.sin(t * 9) * .4 : .3 + Math.sin(t * 2.2) * .06;
+  const shL = walking ? -Math.sin(t * 10 + Math.PI) * .5 : air ? -2.3 : reading ? -1.05 + Math.sin(t * 9 + Math.PI) * .4 : .3 - Math.sin(t * 2.2) * .06;
+  const elR = walking ? .45 : air ? .4 : reading ? .95 : .5;
+  const elL = elR;
+  [[-60, shR, elR], [60, shL, elL]].forEach(([sx, sa, ea]) => {
+    const x0 = FAC + sx, y0 = 136;
+    const ex = x0 + Math.cos(sa) * 30, ey = y0 + Math.sin(sa) * 30;
+    seg(x0, y0, sa, 30, 10, CPLIMB);
+    seg(ex, ey, sa + ea, 26, 9, CPLIMB);
+    mitt(ex + Math.cos(sa + ea) * 26, ey + Math.sin(sa + ea) * 26, 8);
+  });
+  fx.restore();
+}
 function buildSpider(){
   const g = new THREE.Group(); world.add(g); spider.g = g; g.scale.setScalar(S);
-  // 👾 本体：canvas 纹理 Sprite，永远面向镜头（取代旧蜘蛛的粒子头 + 两只大圆眼，脸始终可读）
-  const emoT = canvasTex(256, 256, (x, w) => { x.clearRect(0, 0, w, w); x.font = '190px "Noto Color Emoji","Apple Color Emoji","Segoe UI Emoji","Twemoji Mozilla",sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('👾', w / 2, w / 2); });
-  spider.body = new THREE.Sprite(new THREE.SpriteMaterial({map: emoT, transparent: true, depthWrite: false})); spider.body.position.copy(HEAD); spider.body.scale.setScalar(2.5); spider.body.renderOrder = 5; g.add(spider.body);
-  // 粒子光晕：还原旧版"透明发光身体"（加色混合、随 uTime 明灭），点数从 4700 降到 800
+  // 👾 本体：每帧重绘的手绘外星人，永远面向镜头
+  spider.face = {cv: fcv, tex: new THREE.CanvasTexture(fcv)};
+  drawFace(); spider.face.tex.needsUpdate = true;
+  spider.body = new THREE.Sprite(new THREE.SpriteMaterial({map: spider.face.tex, transparent: true, depthWrite: false})); spider.body.position.copy(HEAD); spider.body.scale.setScalar(2.5); spider.body.renderOrder = 5; g.add(spider.body);
+  // 粒子光晕：透明发光壳（加色混合、随 uTime 明灭），800 点
   const aura = pointsObj(800); let ai = 0;
   for (let n = 0; n < 800; n++, ai++) {
     const v = new THREE.Vector3(gauss(), gauss(), gauss()).normalize().multiplyScalar(1.45 * (.72 + rng() * .28));
@@ -7642,78 +7704,8 @@ function buildSpider(){
   // 脚下的暗影：星云再亮，👾 也压在一块暗底上
   const shT = canvasTex(128, 128, (x, w) => { const g = x.createRadialGradient(64, 64, 0, 64, 64, 64); g.addColorStop(0, 'rgba(2,4,12,.95)'); g.addColorStop(.45, 'rgba(2,4,12,.7)'); g.addColorStop(1, 'rgba(2,4,12,0)'); x.fillStyle = g; x.fillRect(0, 0, w, w); });
   spider.shadow = new THREE.Sprite(new THREE.SpriteMaterial({map: shT, transparent: true, depthWrite: false, depthTest: false, opacity: .8})); spider.shadow.renderOrder = 3; spider.shadow.scale.setScalar(4.4 * S); world.add(spider.shadow);
-  // 8 条腿（恢复 IK 扒云步态）：根部绕在 👾 身下，前两对朝前、后两对朝后
-  legG = new THREE.Group(); world.add(legG);
-  const legMat = new THREE.ShaderMaterial({uniforms: {uC: {value: new THREE.Color('#b8dcff')}, uA: {value: .95}}, vertexShader: LEG_VS, fragmentShader: LEG_FS, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending});
-  const segGeo = new THREE.CylinderGeometry(.72, 1, 1, 12, 1, true);
-  const ANG = [38, 72, 108, 142];
-  sparkObj = pointsObj(8 * 3 * 20);
-  for (let s = -1, li = 0; s <= 1; s += 2) for (let n = 0; n < 4; n++, li++) {
-    const a = ANG[n] * Math.PI / 180;
-    const L = {side: s, n, grp: (n + (s > 0 ? 1 : 0)) % 2,
-      rootL: new THREE.Vector3(s * .5, .5, HEAD.z + .32 - n * .26),
-      restL: new THREE.Vector3(s * Math.sin(a) * 3.1, 0, HEAD.z + Math.cos(a) * 3.0),
-      foot: new THREE.Vector3(), step: null, segs: [], joints: [], P: [new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()], spk: []};
-    for (let q = 0; q < 3; q++) { const m = new THREE.Mesh(segGeo, legMat); m.frustumCulled = false; m.renderOrder = 4; legG.add(m); L.segs.push(m); }
-    for (let q = 0; q < 4; q++) { const j = new THREE.Sprite(new THREE.SpriteMaterial({map: GLOW, color: q === 3 ? 0xffe2cf : q === 0 ? 0x9fd4ff : 0xffc7a8, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false})); j.userData.s = q === 3 ? .5 : q === 0 ? .26 : .4; j.scale.setScalar(j.userData.s * S); j.material.opacity = q === 3 ? .9 : .75; j.renderOrder = 4; legG.add(j); L.joints.push(j); }
-    for (let q = 0; q < 60; q++) L.spk.push({seg: q % 3, t: rng(), a: rng() * TAU, r: rng() * .8});
-    legs.push(L);
-  }
-  legs.forEach((L, li) => L.spk.forEach((k, q) => { const cc = (rng() < .3 ? PEACH : rng() < .6 ? ICE : WHITE).map(v => v * (.6 + rng() * .4)); setPt(sparkObj, li * 60 + q, 0, 0, 0, cc, (.03 + Math.pow(rng(), 5) * .07) * S, 14); }));
-  sparkObj.renderOrder = 4; legG.add(sparkObj);
 }
-const LEN = [1.5, 1.85, .78];
 const tA = window.THREE ? [new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()] : [];
-const UPV = window.THREE ? new THREE.Vector3(0, 1, 0) : null, XV = window.THREE ? new THREE.Vector3(1, 0, 0) : null;
-const qN = window.THREE ? new THREE.Quaternion() : null, qY = window.THREE ? new THREE.Quaternion() : null, qP = window.THREE ? new THREE.Quaternion() : null;
-function setSeg(m, a, b, r){ const d = tA[3].subVectors(b, a), len = d.length(); m.position.addVectors(a, b).multiplyScalar(.5); m.quaternion.setFromUnitVectors(UPV, d.divideScalar(len || 1)); m.scale.set(r, len, r); }
-function legsStep(dt){
-  const g = spider.g; g.updateMatrixWorld();
-  const walking = spider.walking, l1 = LEN[0] * SS, l2 = LEN[1] * SS, l3 = LEN[2] * SS, landing = spider.land > .25;
-  const stepping = [0, 0]; legs.forEach(L => { if (L.step) stepping[L.grp]++; });
-  const SC = CL[spider.a], ddx = spider.dx, ddz = spider.dz;
-  legs.forEach((L, li) => {
-    const R = L.P[0].copy(L.rootL).applyMatrix4(g.matrixWorld);
-    const T = tA[0].copy(L.restL).applyMatrix4(g.matrixWorld); if (walking) { T.x += spider.vx * .2; T.z += spider.vz * .2; } T.y = surfW(SC, T.x, T.z);
-    if (!spider.air) { L.foot.x += ddx; L.foot.z += ddz; if (L.step) { L.step.from.x += ddx; L.step.from.z += ddz; L.step.to.x += ddx; L.step.to.z += ddz; } }
-    if (!L.init) { L.foot.copy(T); L.init = true; }
-    if (spider.air) {
-      const tuck = tA[1].set(L.restL.x * .5, -.45, L.restL.z * .55).applyMatrix4(g.matrixWorld);
-      L.foot.lerp(tuck, Math.min(1, dt * 22)); L.step = null;
-    } else if (L.step) {
-      L.step.t += dt / L.step.dur; const u = Math.min(1, L.step.t), e = ease2(u);
-      L.foot.lerpVectors(L.step.from, L.step.to, e); L.foot.y += Math.sin(Math.PI * u) * .45 * SS;
-      if (u >= 1) { L.foot.copy(L.step.to); L.step = null; }
-    } else {
-      const d = Math.hypot(L.foot.x - T.x, L.foot.z - T.z), thr = walking ? .7 * SS : .32 * SS;
-      if (d > 4 * SS) L.foot.copy(T);
-      else if (d > thr && (landing || (walking ? stepping[1 - L.grp] === 0 : stepping[0] + stepping[1] < 2))) {
-        L.step = {from: L.foot.clone(), to: T.clone(), t: 0, dur: landing ? .09 : walking ? .13 : .2}; stepping[L.grp]++;
-      }
-      // 读词时前腿轻点（像在敲键）
-      if (!L.step) L.foot.y = surfW(SC, L.foot.x, L.foot.z) + (!walking && crawl.phase === 'read' && L.n === 0 ? Math.max(0, Math.sin(animT * 9 + L.side) * .16 * SS) : 0);
-    }
-    // 腿的逆解：踝点在脚尖上方偏内，膝盖朝上
-    const F = L.P[3].copy(L.foot);
-    const o = tA[1].set(F.x - R.x, 0, F.z - R.z); const ol = o.length() || 1; o.divideScalar(ol);
-    const A = L.P[2].set(F.x - o.x * l3 * .3, F.y + l3 * .92, F.z - o.z * l3 * .3);
-    const dir = tA[2].subVectors(A, R); let d = dir.length(); dir.divideScalar(d || 1); d = clamp(d, .2, (l1 + l2) * .995);
-    const ca = clamp((l1 * l1 + d * d - l2 * l2) / (2 * l1 * d), -1, 1), sa2 = Math.sqrt(1 - ca * ca);
-    const perp = tA[3].copy(UPV).addScaledVector(dir, -UPV.dot(dir)).normalize();
-    const K = L.P[1].copy(R).addScaledVector(dir, ca * l1).addScaledVector(perp, sa2 * l1);
-    A.copy(R).addScaledVector(dir, d);   // 够不着时踝点贴着最远处
-    setSeg(L.segs[0], R, K, .1 * SS); setSeg(L.segs[1], K, A, .08 * SS); setSeg(L.segs[2], A, F, .055 * SS);
-    L.joints.forEach((j, q) => { j.position.copy(L.P[q]); j.scale.setScalar(j.userData.s * SS); });
-    // 腿里的亮粒子
-    const pa = sparkObj.geometry.attributes.position;
-    L.spk.forEach((k, q) => {
-      const a = L.P[k.seg], b = L.P[k.seg + 1], rr = [.09, .07, .05][k.seg] * SS * k.r;
-      const x = lerp(a.x, b.x, k.t), y = lerp(a.y, b.y, k.t), z = lerp(a.z, b.z, k.t);
-      pa.setXYZ(li * 60 + q, x + Math.cos(k.a + animT * .8) * rr, y + Math.sin(k.a * 1.7 + animT) * rr, z + Math.sin(k.a + animT * .8) * rr);
-    });
-  });
-  sparkObj.geometry.attributes.position.needsUpdate = true;
-}
 
 /* ---------- 触须：从蜘蛛头部伸到词上的点线；丝线：蜘蛛走过的路 ---------- */
 const TH = 16, TD = 26;
@@ -7919,7 +7911,7 @@ function renderCounters(){
 const CODE_SRC = () => [
   [['cm', '# crawler.py · 逐字审需求，先问再做']],
   [['', 'brief  = '], ['fn', 'load'], ['', '('], ['st', `"${task ? task.id + ' ' + task.name : '—'}"`], ['', ')']],
-  [['', 'spider = '], ['fn', 'Crawler'], ['', '(legs=8, tentacles=16)']],
+  [['', 'spider = '], ['fn', 'Crawler'], ['', '(limbs=4, tentacles=16)']],
   [['kw', 'for'], ['', ' section '], ['kw', 'in'], ['', ' brief.sections:']],
   [['', '    spider.'], ['fn', 'jump_to'], ['', '(section.owner)']],
   [['', '    '], ['kw', 'for'], ['', ' word '], ['kw', 'in'], ['', ' spider.'], ['fn', 'read'], ['', '(section):']],
@@ -8019,14 +8011,13 @@ function updateScene(dt){
   coreBall.children.forEach(m => { m.material.uniforms.uA.value = Math.min(1.4, (m.userData.a0 || (m.userData.a0 = m.material.uniforms.uA.value)) * (1 + flash[0] * .5)); });
   ringsG.children.forEach(h => { const u = h.userData; const a = animT * u.sp; u.dot.position.set(Math.cos(a) * u.r, 0, Math.sin(a) * u.r); });
   ringsG.rotation.y += dt * .03;
-  // 星云蛛本体：👾 脸永远面向镜头；身体姿态（偏航 / 云面倾斜 / 跳跃俯仰）由四元数驱动，8 条腿脚抓地
+  // 星云蛛本体：手绘 👾 每帧重画手脚姿态（走路迈步摆臂 / 读词伸手 / 跳跃收腿举臂 / 落地蹲伏）
   const g = spider.g; g.position.set(spider.x, spider.y + Math.abs(Math.sin(spider.bob)) * (spider.walking ? .07 : .03), spider.z);
-  qN.setFromUnitVectors(UPV, tA[0].set(spider.n[0], spider.n[1], spider.n[2]).normalize()); qY.setFromAxisAngle(UPV, spider.head);
-  qP.setFromAxisAngle(XV, spider.air && spider.jump ? (spider.jump.t - .5) * .5 : 0); g.quaternion.copy(qN).multiply(qY).multiply(qP);
   SS += ((spider.a === 0 && !spider.air ? 1.5 : 1) * S - SS) * Math.min(1, dt * 4);
   const sq = spider.land; g.scale.set(SS * (1 + .14 * sq), SS * (1 - .24 * sq), SS * (1 + .14 * sq));
   spider.shadow.scale.setScalar(4.4 * SS); spider.shadow.position.set(spider.x, spider.y + .1, spider.z); spider.shadow.material.opacity = spider.air ? .25 : .8;
-  legsStep(dt); threadsStep(dt); cometsDraw();
+  drawFace(); spider.face.tex.needsUpdate = true;
+  threadsStep(dt); cometsDraw();
 }
 
 /* ---------- 拔取的信息小框体：读到的词 → 爬取日志 / 读词热力；模糊 → 评分；补齐 → 需求雷达；连线 → 章节 ---------- */
