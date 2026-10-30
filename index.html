@@ -83,7 +83,7 @@ body{background:var(--page);overflow:hidden}
    <button class="tcard" type="button" data-theme-id="forge"><span class="sw sw-forge" aria-hidden="true"></span><span class="tn"><b>06 · ALIENVADOR 星垠异客</b><small>黑洞吸积子 Agent 情报 · 星核投影出整机再拆解 · 逐件交付</small></span><em>当前</em></button>
    <button class="tcard" type="button" data-theme-id="works"><span class="sw sw-works" aria-hidden="true"></span><span class="tn"><b>07 · ALIENVADOR 天工开物</b><small>总控卫星派单 · 8 台机械喷射光丝 · 粒子一滴滴织出项目</small></span><em>当前</em></button>
    <button class="tcard" type="button" data-theme-id="ion"><span class="sw sw-ion" aria-hidden="true"></span><span class="tn"><b>08 · ION 离子回路</b><small>全屏决策电路 · 离子高速穿行 · 每个任务一种颜色</small></span><em>当前</em></button>
-   <button class="tcard" type="button" data-theme-id="park"><span class="sw sw-park" aria-hidden="true"></span><span class="tn"><b>09 · PARK 智造园区</b><small>微缩工业园区 · 6 座车间 = 6 条工作流 · 调度台控启停</small></span><em>当前</em></button>
+   <button class="tcard" type="button" data-theme-id="park"><span class="sw sw-park" aria-hidden="true"></span><span class="tn"><b>09 · ALIENVADOR 智造园区</b><small>微缩工业园区 · 6 座车间 = 6 条工作流 · 调度台控启停</small></span><em>当前</em></button>
    <button class="tcard" type="button" data-theme-id="hq"><span class="sw sw-hq" aria-hidden="true"></span><span class="tn"><b>10 · ALIENVADOR 智能总部</b><small>回字形总部沙盘 · 中央总经理办公室 · 点 Chief 派任务、点 HR 管人员</small></span><em>当前</em></button>
    <div class="tcard next" aria-disabled="true"><span class="sw sw-next" aria-hidden="true"></span><span class="tn"><b>11 · 下一款</b><small>系列主题筹备中</small></span></div>
   </div>
@@ -2353,7 +2353,7 @@ button.tb:focus-visible{outline:1px solid var(--hi);outline-offset:2px}
 </div>
 </template>
 
-<!-- ===== 主题 09 · PARK 智造园区 ===== -->
+<!-- ===== 主题 09 · ALIENVADOR 智造园区 ===== -->
 <template id="tpl-park">
 <style>
 /* Layout: 微缩工业园区作战大屏 —— 两层场景：
@@ -2780,7 +2780,7 @@ input[type=range]:focus-visible{outline:1px solid var(--fg);outline-offset:3px}
 </style>
 
 <div class="app" id="app">
-<canvas class="gl" id="gl" aria-label="智造园区：中间是调度中枢，6 座厂房各是一条 Agent 工作流，传送带把工单箱送进车间、把成品送回中枢。点厂房进入车间看每台机器的工序进度；拖动旋转镜头，滚轮缩放，双击复位，Esc 返回园区"></canvas>
+<canvas class="gl" id="gl" aria-label="ALIENVADOR 智造园区：中间是调度中枢，6 座厂房各是一条 Agent 工作流，传送带把工单箱送进车间、把成品送回中枢。点厂房进入车间看每台机器的工序进度；拖动旋转镜头，滚轮缩放，双击复位，Esc 返回园区"></canvas>
 <canvas class="fx" id="fx" aria-hidden="true"></canvas>
 <div class="vig" aria-hidden="true"></div>
 <div class="nr" id="nr">
@@ -2791,13 +2791,13 @@ input[type=range]:focus-visible{outline:1px solid var(--fg);outline-offset:3px}
   <div class="labels" id="labels"></div>
   <div class="cards" id="cards"></div>
   <header class="hd">
-   <div class="eb">AGENT OPS · THEME <b>09</b> · AGENT PARK · 6 WORKSHOPS</div>
-   <h1><span>AGENT</span><span class="l1">PARK<em>智造园区</em></span></h1>
+   <div class="eb">AGENT OPS · THEME <b>09</b> · ALIENVADOR · 6 WORKSHOPS</div>
+   <h1><span>ALIENVADOR</span><span class="l1">智造园区</span></h1>
    <div class="sub">6 座厂房 = 6 条 Agent 工作流 · 中枢派单 · 车间逐道工序加工 · 成品回收交付</div>
    <div class="sub2">示例数据 · 本地模拟 · 未接模型 · <b id="clock">--:--:--</b></div>
   </header>
   <nav class="crumb pe" aria-label="场景导航">
-   <div class="cr cr-park"><span class="live-dot"></span><span class="big" id="crLines">6</span><b>座车间</b><span>·</span><span class="big" id="crSteps">28</span><b>道工序运转中</b><em id="crSub">PARK VIEW</em><button class="cb hubb" type="button" data-act="hub">调度台</button></div>
+   <div class="cr cr-park"><span class="live-dot"></span><span class="big" id="crLines">6</span><b>座车间</b><span>·</span><span class="big" id="crSteps">28</span><b>道工序运转中</b><em id="crSub">ALIENVADOR VIEW</em><button class="cb hubb" type="button" data-act="hub">调度台</button></div>
    <div class="cr cr-hub"><button class="cb" type="button" data-act="home">← 园区</button><span class="cr-n">00</span><b>调度中枢</b><em id="crHubSub">ORCHESTRATOR · 29 AGENTS</em></div>
    <div class="cr cr-hall" id="crHall"><button class="cb" type="button" data-act="home">← 园区</button><span class="cr-n" id="crN">01</span><b id="crName">内容车间</b><em id="crEn">CONTENT</em><button class="cb stop" type="button" data-act="toggle" id="crTog">停机</button><button class="cb" type="button" data-act="prev" aria-label="上一个车间">‹</button><button class="cb" type="button" data-act="next" aria-label="下一个车间">›</button></div>
    <button class="tod" type="button" data-act="tod" aria-label="切换昼夜"><i id="todIc">☀</i><b id="todT">--:--</b><span id="todL">实时</span></button>
@@ -2807,12 +2807,12 @@ input[type=range]:focus-visible{outline:1px solid var(--fg);outline-offset:3px}
    <button class="tb" type="button" data-series-pick>主题</button>
    <button class="tb" type="button" data-act="full" data-f="full">全屏</button>
   </div>
-  <div class="strip"><span class="live">PARK 09 · RUNNING</span><span>LINES<b id="sLines">6</b></span><span>WIP<b id="sWip">0</b></span><span>FPY<b id="sFpy">0</b>%</span><span>FPS<b id="sFps">60</b></span></div>
+  <div class="strip"><span class="live">ALIENVADOR 09 · RUNNING</span><span>LINES<b id="sLines">6</b></span><span>WIP<b id="sWip">0</b></span><span>FPY<b id="sFpy">0</b>%</span><span>FPS<b id="sFps">60</b></span></div>
 
   <aside class="col-l">
    <div class="pg pg-park">
     <section class="panel ovp">
-     <div class="ph"><span><b>01</b> / 园区总览 · PARK OVERVIEW</span><span id="ovMeta">TODAY</span></div>
+     <div class="ph"><span><b>01</b> / 园区总览 · ALIENVADOR OVERVIEW</span><span id="ovMeta">TODAY</span></div>
      <div class="kg kg3">
       <div class="kt hl"><span><em>今日工单</em>ORDERS</span><b id="pOrd">0</b><div class="d up" id="pOrdD">—</div></div>
       <div class="kt"><span><em>已交付</em>DELIVERED</span><b id="pDel">0</b><div class="d" id="pDelD">—</div></div>
@@ -2901,13 +2901,13 @@ input[type=range]:focus-visible{outline:1px solid var(--fg);outline-offset:3px}
   </section>
 
   <footer class="sb">
-   <span class="on">PARK ONLINE</span><span>今日交付 <b id="sbDel">0</b></span><span>在制 <b id="sbWip">0</b></span><span>一次通过率 <b id="sbFpy">0</b>%</span><span>当前场景 <b id="sbScene">园区全景</b></span><span class="wm">DEVELOPED BY @赛博老爸</span>
+   <span class="on">ALIENVADOR ONLINE</span><span>今日交付 <b id="sbDel">0</b></span><span>在制 <b id="sbWip">0</b></span><span>一次通过率 <b id="sbFpy">0</b>%</span><span>当前场景 <b id="sbScene">园区全景</b></span><span class="wm">DEVELOPED BY @赛博老爸</span>
   </footer>
  </div>
 
  <div class="mini" id="mini">
   <div class="m-top">
-   <div class="m-title">AGENT PARK<i id="mSub">智造园区 · 示例数据</i></div>
+   <div class="m-title">ALIENVADOR<i id="mSub">智造园区 · 示例数据</i></div>
    <div class="m-btns pe">
     <button class="tb m-back" type="button" data-act="home">← 园区</button>
     <button class="tb m-hub" type="button" data-act="hub">调度台</button>
@@ -15104,7 +15104,7 @@ host.__st = function () { return { ci: ST.ci, ph: ST.ph, hop: ST.hop, sub: ST.su
 requestAnimationFrame(frame);
 }
 
-/* ================= 主题 09 · PARK 智造园区（原生 WebGL 3D 园区 + 车间，不依赖 three.js） ================= */
+/* ================= 主题 09 · ALIENVADOR 智造园区（原生 WebGL 3D 园区 + 车间，不依赖 three.js） ================= */
 function mountPark(host, SR){
 "use strict";
 var TAU = Math.PI * 2;
@@ -17923,7 +17923,7 @@ function syncButtons() {
   [].forEach.call(SR.querySelectorAll('[data-f="mode"]'), function (b) { b.textContent = scene >= 0 && focus >= 0 ? "S" + (focus + 1) : VIEWS[view]; });
   TABS.forEach(function (b) { var h = +b.getAttribute("data-h"); setCls(b, h === scene ? "on" : ""); });
   setTxt($("sbScene"), scene === -2 ? "调度中枢 · 控制台" : (scene < 0 ? "园区" + VIEWS[view] : WS[scene].zh + (focus >= 0 ? " · S" + (focus + 1) + " " + WS[scene].steps[focus].zh : "")));
-  setTxt($("crSub"), view === 1 ? "AUTO TOUR" : (view === 2 ? "TOP VIEW" : "PARK VIEW"));
+  setTxt($("crSub"), view === 1 ? "AUTO TOUR" : (view === 2 ? "TOP VIEW" : "ALIENVADOR VIEW"));
 }
 
 /* =====================================================================
@@ -18468,7 +18468,7 @@ $("cons").addEventListener("change", function (e) {
   for (var t = 0; t < 24; t++) PK.tp.push(WS.map(function (w, k) { return Math.floor(r() * 2.6 + (k === 0 ? 1 : 0.6)); }));
   cPush("from park import hub, conveyor, drone");
   cPush("hub.boot(workshops=6, agents=" + (NSTEP + 1) + ")   # 园区自动运行");
-  log(-1, "中枢", "PARK 09 自动运行 · 6 座车间 · " + NSTEP + " 道工序在线");
+  log(-1, "中枢", "ALIENVADOR 智造园区自动运行 · 6 座车间 · " + NSTEP + " 道工序在线");
 })();
 setTxt($("clock"), hms()); setInterval(function () { if (!host.hidden) setTxt($("clock"), hms()); }, 1000);
 buildMini(-1);
