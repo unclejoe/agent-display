@@ -81,7 +81,7 @@ body{background:var(--page);overflow:hidden}
    <button class="tcard" type="button" data-theme-id="factory"><span class="sw sw-factory" aria-hidden="true"></span><span class="tn"><b>04 · FACTORY 机器人工厂</b><small>整座 3D 车间 · 12 台机器人接力 · 总工程造完就发射</small></span><em>当前</em></button>
    <button class="tcard" type="button" data-theme-id="nebula"><span class="sw sw-nebula" aria-hidden="true"></span><span class="tn"><b>05 · NEBULA 星核蜘蛛</b><small>12 团智能体星云 · 星云蛛逐字审需求 · 过线才派单</small></span><em>当前</em></button>
    <button class="tcard" type="button" data-theme-id="forge"><span class="sw sw-forge" aria-hidden="true"></span><span class="tn"><b>06 · ALIENVADOR 星垠异客</b><small>黑洞吸积子 Agent 情报 · 星核投影出整机再拆解 · 逐件交付</small></span><em>当前</em></button>
-   <button class="tcard" type="button" data-theme-id="works"><span class="sw sw-works" aria-hidden="true"></span><span class="tn"><b>07 · WORKS 天工开物</b><small>总控卫星派单 · 8 台机械喷射光丝 · 粒子一滴滴织出项目</small></span><em>当前</em></button>
+   <button class="tcard" type="button" data-theme-id="works"><span class="sw sw-works" aria-hidden="true"></span><span class="tn"><b>07 · ALIENVADOR 天工开物</b><small>总控卫星派单 · 8 台机械喷射光丝 · 粒子一滴滴织出项目</small></span><em>当前</em></button>
    <button class="tcard" type="button" data-theme-id="ion"><span class="sw sw-ion" aria-hidden="true"></span><span class="tn"><b>08 · ION 离子回路</b><small>全屏决策电路 · 离子高速穿行 · 每个任务一种颜色</small></span><em>当前</em></button>
    <button class="tcard" type="button" data-theme-id="park"><span class="sw sw-park" aria-hidden="true"></span><span class="tn"><b>09 · PARK 智造园区</b><small>微缩工业园区 · 6 座车间 = 6 条工作流 · 调度台控启停</small></span><em>当前</em></button>
    <button class="tcard" type="button" data-theme-id="hq"><span class="sw sw-hq" aria-hidden="true"></span><span class="tn"><b>10 · HQ 智能总部</b><small>回字形总部沙盘 · 中央总经理办公室 · 点 Chief 派任务、点 HR 管人员</small></span><em>当前</em></button>
@@ -1768,7 +1768,7 @@ button.tb:focus-visible{outline:1px solid var(--ice);outline-offset:2px}
 <div class="glfail" id="glFail" hidden>这台设备的浏览器没法显示 3D 画面（WebGL 不可用），面板数据照常在跑。换 Chrome / Edge 打开即可看到星核。</div>
 </template>
 
-<!-- ===== 主题 07 · WORKS 天工开物 ===== -->
+<!-- ===== 主题 07 · ALIENVADOR 天工开物 ===== -->
 <template id="tpl-loom">
 <style>
 /* Layout: 三栏作战大屏 —— 顶部正中是「总控卫星」，下方 8 台造型各异的织机（= 子 Agent）由牵引线挂在总控主环上，
@@ -2009,7 +2009,7 @@ button.tb:focus-visible{outline:1px solid var(--ice);outline-offset:2px}
 @media (prefers-reduced-motion:reduce){.eyebrow i{animation:none}.dr.new{animation:none}.sw::after{animation:none}.bar i{transition:none}.code li.cur::after{animation:none}}
 </style>
 
-<canvas class="gl" id="gl" aria-label="天工开物：顶部总控卫星向 8 台织机下达任务，织机向下吐出彩色光丝汇入 7 个织位，再由织位垂下的丝线在底部织造台上织出当前项目。拖动旋转织造台，滚轮缩放，双击复位"></canvas>
+<canvas class="gl" id="gl" aria-label="ALIENVADOR 天工开物：顶部总控卫星向 8 台织机下达任务，织机向下吐出彩色光丝汇入 7 个织位，再由织位垂下的丝线在底部织造台上织出当前项目。拖动旋转织造台，滚轮缩放，双击复位"></canvas>
 <div class="vig" aria-hidden="true"></div>
 <canvas class="fx" id="fx" aria-hidden="true"></canvas>
 <div class="nr" id="nr">
@@ -2018,7 +2018,7 @@ button.tb:focus-visible{outline:1px solid var(--ice);outline-offset:2px}
   <div class="topfade"></div>
   <header class="hd">
    <div class="eb">AGENT OPS · THEME <b>07</b> · ORBITAL BUILD</div>
-   <h1><span>HEAVEN</span><span class="l1">WORKS<em>天工开物</em></span></h1>
+   <h1><span>ALIENVADOR</span><span class="l1">天工开物</span></h1>
    <div class="sub">总控卫星下令 · 8 台织机喷射光丝 · 项目在织造台上一滴一滴成形</div>
    <div class="sub2">示例数据 · 本地模拟 · 未接模型 · <b id="clock">--:--:--</b></div>
   </header>
@@ -2096,7 +2096,7 @@ button.tb:focus-visible{outline:1px solid var(--ice);outline-offset:2px}
 
  <div class="mini" id="mini">
   <div class="m-top">
-   <div class="m-title">HEAVEN WORKS<i>天工开物 · 示例数据</i></div>
+   <div class="m-title">ALIENVADOR<i>天工开物 · 示例数据</i></div>
    <div class="m-btns pe">
     <button class="tb" type="button" data-act="mode">视角<b data-f="mode">环绕</b></button>
     <button class="tb" type="button" data-series-pick>主题</button>
@@ -11830,7 +11830,7 @@ requestAnimationFrame(frame);
 
 }
 
-/* ================= 主题 07 · WORKS 天工开物（原生 WebGL + 2D，不依赖 three.js） ================= */
+/* ================= 主题 07 · ALIENVADOR 天工开物（原生 WebGL + 2D，不依赖 three.js） ================= */
 function mountLoom(host, SR){
 "use strict";
 var TAU = Math.PI * 2;
