@@ -84,7 +84,7 @@ body{background:var(--page);overflow:hidden}
    <button class="tcard" type="button" data-theme-id="works"><span class="sw sw-works" aria-hidden="true"></span><span class="tn"><b>07 · ALIENVADOR 天工开物</b><small>总控卫星派单 · 8 台机械喷射光丝 · 粒子一滴滴织出项目</small></span><em>当前</em></button>
    <button class="tcard" type="button" data-theme-id="ion"><span class="sw sw-ion" aria-hidden="true"></span><span class="tn"><b>08 · ION 离子回路</b><small>全屏决策电路 · 离子高速穿行 · 每个任务一种颜色</small></span><em>当前</em></button>
    <button class="tcard" type="button" data-theme-id="park"><span class="sw sw-park" aria-hidden="true"></span><span class="tn"><b>09 · PARK 智造园区</b><small>微缩工业园区 · 6 座车间 = 6 条工作流 · 调度台控启停</small></span><em>当前</em></button>
-   <button class="tcard" type="button" data-theme-id="hq"><span class="sw sw-hq" aria-hidden="true"></span><span class="tn"><b>10 · HQ 智能总部</b><small>回字形总部沙盘 · 中央总经理办公室 · 点 Chief 派任务、点 HR 管人员</small></span><em>当前</em></button>
+   <button class="tcard" type="button" data-theme-id="hq"><span class="sw sw-hq" aria-hidden="true"></span><span class="tn"><b>10 · ALIENVADOR 智能总部</b><small>回字形总部沙盘 · 中央总经理办公室 · 点 Chief 派任务、点 HR 管人员</small></span><em>当前</em></button>
    <div class="tcard next" aria-disabled="true"><span class="sw sw-next" aria-hidden="true"></span><span class="tn"><b>11 · 下一款</b><small>系列主题筹备中</small></span></div>
   </div>
   <div class="pk-f"><span>按 T 键直接轮换主题 · 选择会被记住</span><span>DEVELOPED BY @赛博老爸</span></div>
@@ -2927,7 +2927,7 @@ input[type=range]:focus-visible{outline:1px solid var(--fg);outline-offset:3px}
 </div>
 </template>
 
-<!-- ===== 主题 10 · HQ 智能总部 ===== -->
+<!-- ===== 主题 10 · ALIENVADOR 智能总部 ===== -->
 <template id="tpl-hq">
 <style>
 /* Layout（框体极简：左右不放框，公司总进度等主数据直接写在背景上；部门 / 项目 / 成员 / 流水 / 档案收进底部一条）: 行政总部作战大屏 —— 一家公司 = 一座单层「回字形」办公楼（只画这栋楼，深色背景，不画周边环境）：正中是总经理办公室，Chief 坐在大班台后（点它派新任务），
@@ -3298,7 +3298,7 @@ button.tb:focus-visible{outline:1px solid var(--hi);outline-offset:2px}
 </style>
 
 <div class="app" id="app">
-<canvas class="gl" id="gl" aria-label="智能总部：一座回字形单层办公楼的沙盘，正中是 Chief 的总经理办公室，四周 8 个部门，每个人是一个 Agent 或一位真人督办。点 Chief 新增任务，点人事部负责人管理成员，点部门或人物看进度；拖动旋转镜头，滚轮缩放，双击复位，Esc 返回"></canvas>
+<canvas class="gl" id="gl" aria-label="ALIENVADOR 智能总部：一座回字形单层办公楼的沙盘，正中是 Chief 的总经理办公室，四周 8 个部门，每个人是一个 Agent 或一位真人督办。点 Chief 新增任务，点人事部负责人管理成员，点部门或人物看进度；拖动旋转镜头，滚轮缩放，双击复位，Esc 返回"></canvas>
 <canvas class="fx" id="fx" aria-hidden="true"></canvas>
 <div class="vig" aria-hidden="true"></div>
 <div class="nr" id="nr">
@@ -3310,8 +3310,8 @@ button.tb:focus-visible{outline:1px solid var(--hi);outline-offset:2px}
   <div class="tags" id="tags"></div>
   <div class="bubs" id="bubs"></div>
   <header class="hd">
-   <div class="eb">AGENT OPS · THEME <b>10</b> · AGENT HQ · 8 DEPARTMENTS</div>
-   <h1><span>AGENT</span><span class="l1">HQ<em>智能总部</em></span></h1>
+   <div class="eb">AGENT OPS · THEME <b>10</b> · ALIENVADOR · 8 DEPARTMENTS</div>
+   <h1><span>ALIENVADOR</span><span class="l1">智能总部</span></h1>
    <div class="sub2">示例数据 · 本地模拟 · 未接模型 · <b id="clock">--:--:--</b></div>
   </header>
   <nav class="crumb pe" aria-label="视图导航">
@@ -3361,7 +3361,7 @@ button.tb:focus-visible{outline:1px solid var(--hi);outline-offset:2px}
 
  <div class="mini" id="mini">
   <div class="m-top">
-   <div class="m-title">AGENT HQ<i id="mSub">智能总部 · 示例数据</i></div>
+   <div class="m-title">ALIENVADOR<i id="mSub">智能总部 · 示例数据</i></div>
    <div class="m-btns pe">
     <button class="tb m-back" type="button" data-act="home">← 全景</button>
     <button class="tb" type="button" data-act="task">＋任务</button>
@@ -18499,7 +18499,7 @@ host.__perf = function (n) { var t0 = performance.now(), i; for (i = 0; i < n; i
 requestAnimationFrame(frame);
 }
 
-/* ================= 主题 10 · HQ 智能总部（原生 WebGL 3D 行政总部，不依赖 three.js） ================= */
+/* ================= 主题 10 · ALIENVADOR 智能总部（原生 WebGL 3D 行政总部，不依赖 three.js） ================= */
 function mountHQ(host, SR){
 "use strict";
 var TAU = Math.PI * 2;
@@ -21230,7 +21230,7 @@ document.addEventListener("keydown", function (e) {
   for (var t = 0; t < 12; t++) ST.lead.push(80 + r() * 90);
   var hrh = headOf(HRD) || CHIEF, nA = 0; living().forEach(function (p) { if (p.ai) nA++; });
   log(hrh.n, pcol(hrh), "人员日报 · 在岗 " + living().length + " 人（Agent " + nA + " · 真人督办 " + (living().length - nA) + "）", "", { d: [HRD], p: [hrh.id] });
-  log("小枢", CHIEF_C, "HQ 10 自动运行 · " + living().length + " 名成员在线 · 点我可以派新任务", "", { d: [], p: [CHIEF.id] });
+  log("小枢", CHIEF_C, "ALIENVADOR 智能总部自动运行 · " + living().length + " 名成员在线 · 点我可以派新任务", "", { d: [], p: [CHIEF.id] });
 })();
 setTxt($("clock"), hms()); setInterval(function () { if (!host.hidden) setTxt($("clock"), hms()); }, 1000);
 buildStaff(); buildProjRows(); buildBottom(); syncButtons();
